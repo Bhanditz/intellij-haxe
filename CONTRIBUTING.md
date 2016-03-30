@@ -2,8 +2,7 @@ Contributing
 ============
 
 *NOTE: TiVo and the Haxe Foundation are moving our development focus to IDEA version 14 and later.
-Support for version 13.1 is not being removed, but will no longer be tested or regarded as
-development progresses.*
+Support for version 13.1 been removed as of release 0.9.8.*
 
 ##Reporting errors  
 ------------------
@@ -25,7 +24,9 @@ can reproduce the issue.
 ##Development Environment
 -------------------------
 
-You will need the release version of Intellij IDEA Ultimate 13.1, 14.0, or later to develop the plugin.
+You will need the release version of Intellij IDEA Ultimate 14.x, 15.x, or later to develop the plugin.
+*There are reports that you can develop with IDEA Community Edition, though extended functionality such as
+diagrams and hierarchy panels will not be available and you wont be able to test their Haxe equivalents.*
 
 ###Plugins
 Install the following plugins [from Intellij IDEA plugin manager](https://www.jetbrains.com/idea/plugins/).
@@ -73,7 +74,7 @@ enabled in the test instance of Idea that is launched.)
 ###Steps to configure a IntelliJ Platform Plugin SDK:
 - Open Module Settings
 - SDKs -> + button -> IntelliJ Platform Plugin SDK -> Choose a folder with IntelliJ Ultimate(!) or *.App on Mac
-- Go to the SDK’s settings page -> Classpath tab -> + button(upper right corner) -> add plugins: flex
+- Go to the SDK’s settings page -> Classpath tab -> + button(upper right corner or bottom left corner in IntelliJ 14) -> add plugins: flex
 - To add a plugin go to IntelliJ IDEA folder/plugins/<plugin-name>/lib and choose all jars
 - Add *all* libraries from <your_IDEA_install_directory>/lib directory.  Do this after each upgrade, too,
 particularly if you see ClassNotFound exceptions when attempting to run the plugin.
@@ -94,11 +95,15 @@ particularly if you see ClassNotFound exceptions when attempting to run the plug
 Contributors are expected to have and build against each of the latest 
 sub-release of each major and minor version of IDEA that is supported 
 by the plugin team.  At the time of this writing, that would be 14.0.4, 
-and 14.1.1.  As new versions are released this will continue to be 
+and 14.1.1, 14.1.5 (introduced a breaking change), and 15.0.3.
+As new versions are released this will continue to be
 a moving target, as we attempt to keep up with the development community.
 
 We do NOT expect contributors to keep up to date with EAP releases, nor does 
 the team support them (though the plugin may work, and will usually install).
+
+*According to JetBrains, IDEA releases 16 EAP and later require JDK 8.  That
+build environment has not been successfully used for this plugin at this time.*
 
 ####Ant Builds
 
@@ -393,12 +398,12 @@ repository.
 - TiVo releases will be built and tested for the following environments:  
    OS: Linux(Ubuntu14.04 and Centos6.5), OSX  
    JVM: Sun Java 1.6  
-   IDEA versions: 14, 14.1 (release versions  EAP will not be tracked).  
+   IDEA versions: 14, 14.1, 14.1.6, and 15 (release versions  EAP will not be tracked).
 - JetBrains releases will be built and smoke tested for the following environments:  
    OS: Linux(Ubuntu14.04), OSX, Windows  
    JVM: Sun Java 1.6 target, using Sun Java 1.8 compilers (because the Java 1.6 and 1.7 
    maintenance windows have closed)  
-   IDEA versions: 14, 14.1 (release versions)  
+   IDEA versions: 14, 14.1, 14.1.6, and 15 (release versions)
 
 ####Who will test:
 
@@ -416,8 +421,67 @@ repository.
 ####Release Timing
 
 As far as updates the IDEA repository go, the team will agree on releases as necessary and as critical
-errors are fixed.  Optimally, we should create a release about every month to six weeks.  
+errors are fixed.  Optimally, we should create a release about every month to six weeks.
+  
+####Release Process
 
+Once we have a stable code base and would like to create a release, you should get consensus from
+the current primary developers.  Once you have agreement on the release number, this is the process:
+
+1. Make sure that all relevant outstanding pull requests have been merged into the master branch.
+
+2. Review the git change log and make sure that all relevant updates are reflected in the plugin's 
+change log.  The change log appears in two places: src/META-INF/plugin.xml and CHANGELOG.md.  The 
+former is what the IDEA user will see in the plugin description page and in the IDEA plugin 
+repository.  The latter is what github users will see.  You will also need the change log 
+for the releases page later on.   To keep things in sync, it is easiest to edit the plugin.xml, 
+then copy the relevant section to CHANGELOG.md.
+
+3. Update the CONTRIBUTORS.md file: `./update_contributors.sh` in the project root.
+
+3. Commit the change logs, merge them into master, and then pull the master branch locally so that you
+can test and tag it.
+
+4. Build *each* of the releases: For each release, run make (or your local equivalent) 
+    - `IDEA_VERSION=14.0.4 make`, or `ant -Didea.ultimate.build=<path_to_intellij_14.0.4>`
+    - `IDEA_VERSION=14.1.4 make`
+    - `IDEA_VERSION=14.1.6 make`
+    - `IDEA_VERSION=15.0.3 make`
+
+5. Smoke test *each* of the releases.  A smoke test includes loading the releases in a primary instance of IDEA and verifying 
+basic functionality:  
+    - Reload a project
+    - Compile a project
+    - Show class hierarchy
+    - Copy/Paste a block
+    - Invoke completion
+    - Visually verify coloring
+    - Goto definition
+    - Find occurrences
+    - Start the debugger
+    - Run the project
+
+5. Run the unit tests on all versions:
+    - `IDEA_VERSION=13.1.6 make test`, etc.
+    - or `ant -Dintellij.ultimate.build=<path_to_intellij_13.1.6> -f build-test.xml`, etc.
+    
+4. Tag the commit using the agreed upon release number: `git tag -a 0.9.5 -m "Release 0.9.5"`
+
+5. Push the release back up to master: `git push origin master; git push --tags origin master`
+
+6. Create a release on github, using the tag you just created:
+    - [https://github.com/tivo/intellij-haxe/releases](https://github.com/tivo/intellij-haxe/releases)
+    - Sign in and draft a new release, using the tag you just added. 
+    - Upload all of the release jars to the release.
+    - Add the change notes for the most recent changes (between this release and the last).
+    - Mark it as pre-release if appropriate.
+    - Submit
+
+7. Create a Pull Request to pull all of the current changes up to the JetBrains/intellij-haxe/master
+repository.  Add a shoutouts to @as3Boyan and @EBatTiVo to the pull request.
+
+8. Upload the jars to the IDEA plugin repository 
+[https://plugins.jetbrains.com/plugin/6873?pr=idea](https://plugins.jetbrains.com/plugin/6873?pr=idea)
 
 ###Code Review and Commit Process
 
